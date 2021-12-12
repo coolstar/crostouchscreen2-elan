@@ -524,7 +524,7 @@ static void elants_i2c_mt_event(PELAN_CONTEXT pDevice, uint8_t *buf) {
 	finger_state = ((buf[FW_POS_STATE + 1] & 0x30) << 4) |
 		buf[FW_POS_STATE];
 
-	for (int i = 0; i < MAX_CONTACT_NUM && n_fingers; i++) {
+	for (int i = 0; i < MAX_CONTACT_NUM; i++) {
 		if (finger_state & 1) {
 			unsigned int x, y, p, w;
 
