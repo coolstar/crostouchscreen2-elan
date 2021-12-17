@@ -362,7 +362,12 @@ Status
 
 	status = SpbTargetInitialize(FxDevice, &pDevice->I2CContext);
 
-	BOOTTOUCHSCREEN(pDevice);
+	if (!NT_SUCCESS(status))
+	{
+		return status;
+	}
+
+	status = BOOTTOUCHSCREEN(pDevice);
 
 	if (!NT_SUCCESS(status))
 	{
@@ -594,7 +599,10 @@ BOOLEAN OnInterruptIsr(
 		return false;
 
 	uint8_t buf[MAX_PACKET_SIZE];
-	elants_i2c_read(pDevice, buf, sizeof(buf));
+	NTSTATUS status = elants_i2c_read(pDevice, buf, sizeof(buf));
+	if (!NT_SUCCESS(status)) {
+		return false;
+	}
 	
 	switch (buf[FW_HDR_TYPE]) {
 	case QUEUE_HEADER_SINGLE:
