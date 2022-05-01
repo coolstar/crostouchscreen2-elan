@@ -78,112 +78,10 @@ static NTSTATUS elants_i2c_execute_command(PELAN_CONTEXT pDevice, uint8_t* cmd, 
 	}
 
 	if (resp[FW_HDR_TYPE] != expected_response) {
-		ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "unexpected response: %s\n", cmd_name);
+		ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "unexpected response: %s (0x%x)\n", cmd_name, resp[FW_HDR_TYPE]);
 		return STATUS_DEVICE_DATA_ERROR;
 	}
 	return status;
-}
-
-VOID
-ElanBootWorkItem(
-	IN WDFWORKITEM  WorkItem
-)
-{
-	WDFDEVICE Device = (WDFDEVICE)WdfWorkItemGetParentObject(WorkItem);
-	PELAN_CONTEXT pDevice = GetDeviceContext(Device);
-	NTSTATUS status = STATUS_SUCCESS;
-
-	//Get Hello Packet
-	uint8_t hello_packet[] = { 0x55, 0x55, 0x55, 0x55 };
-
-	uint8_t buf[HEADER_SIZE];
-	status = elants_i2c_read(pDevice, buf, sizeof(buf));
-	if (status != STATUS_SUCCESS) {
-		ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Unable to read hello packet!\n");
-		return;
-	}
-
-	if (memcmp(buf, hello_packet, sizeof(hello_packet))) {
-		ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Failed to get hello packet!\n");
-		return;
-	}
-
-	pDevice->TouchScreenBooted = true;
-
-	WdfObjectDelete(WorkItem);
-}
-
-void ElanBootTimer(_In_ WDFTIMER hTimer) {
-	WDFDEVICE Device = (WDFDEVICE)WdfTimerGetParentObject(hTimer);
-	PELAN_CONTEXT pDevice = GetDeviceContext(Device);
-
-	WDF_OBJECT_ATTRIBUTES attributes;
-	WDF_WORKITEM_CONFIG workitemConfig;
-	WDFWORKITEM hWorkItem;
-
-	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-	WDF_OBJECT_ATTRIBUTES_SET_CONTEXT_TYPE(&attributes, ELAN_CONTEXT);
-	attributes.ParentObject = Device;
-	WDF_WORKITEM_CONFIG_INIT(&workitemConfig, ElanBootWorkItem);
-
-	WdfWorkItemCreate(&workitemConfig,
-		&attributes,
-		&hWorkItem);
-
-	WdfWorkItemEnqueue(hWorkItem);
-	WdfTimerStop(hTimer, FALSE);
-}
-
-VOID
-ElanResetWorkItem(
-	IN WDFWORKITEM  WorkItem
-)
-{
-	WDFDEVICE Device = (WDFDEVICE)WdfWorkItemGetParentObject(WorkItem);
-	PELAN_CONTEXT pDevice = GetDeviceContext(Device);
-	NTSTATUS status = STATUS_SUCCESS;
-
-	uint8_t boot_cmd[] = { 0x4D, 0x61, 0x69, 0x6E };
-	status = elants_i2c_send(pDevice, boot_cmd, sizeof(boot_cmd));
-	if (!NT_SUCCESS(status)) {
-		ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Unable to send boot cmd\n");
-		return;
-	}
-	
-	WDF_TIMER_CONFIG              timerConfig;
-	WDFTIMER                      hTimer;
-	WDF_OBJECT_ATTRIBUTES         attributes;
-
-	WDF_TIMER_CONFIG_INIT(&timerConfig, ElanBootTimer);
-
-	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-	attributes.ParentObject = pDevice->FxDevice;
-	status = WdfTimerCreate(&timerConfig, &attributes, &hTimer);
-
-	WdfTimerStart(hTimer, WDF_REL_TIMEOUT_IN_MS(BOOT_TIME_DELAY_MS));
-
-	WdfObjectDelete(WorkItem);
-}
-
-void ElanResetTimer(_In_ WDFTIMER hTimer) {
-	WDFDEVICE Device = (WDFDEVICE)WdfTimerGetParentObject(hTimer);
-	PELAN_CONTEXT pDevice = GetDeviceContext(Device);
-
-	WDF_OBJECT_ATTRIBUTES attributes;
-	WDF_WORKITEM_CONFIG workitemConfig;
-	WDFWORKITEM hWorkItem;
-
-	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-	WDF_OBJECT_ATTRIBUTES_SET_CONTEXT_TYPE(&attributes, ELAN_CONTEXT);
-	attributes.ParentObject = Device;
-	WDF_WORKITEM_CONFIG_INIT(&workitemConfig, ElanResetWorkItem);
-
-	WdfWorkItemCreate(&workitemConfig,
-		&attributes,
-		&hWorkItem);
-
-	WdfWorkItemEnqueue(hWorkItem);
-	WdfTimerStop(hTimer, FALSE);
 }
 
 NTSTATUS BOOTTOUCHSCREEN(
@@ -192,7 +90,76 @@ NTSTATUS BOOTTOUCHSCREEN(
 {
 	NTSTATUS status = STATUS_SUCCESS;
 
+	LARGE_INTEGER delay;
 	if (!devContext->TouchScreenBooted) {
+#define MAX_RETRIES 3
+		for (int retries = 0; retries < MAX_RETRIES; retries++) {
+			ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Initializing... (attempt %d)\n", retries);
+			uint8_t soft_rst_cmd[] = { 0x77, 0x77, 0x77, 0x77 };
+			status = elants_i2c_send(devContext, soft_rst_cmd, sizeof(soft_rst_cmd));
+
+			delay.QuadPart = -30 * 10;
+			KeDelayExecutionThread(KernelMode, FALSE, &delay);
+
+			if (!NT_SUCCESS(status)) {
+				ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Unable to send soft reset\n");
+				if (retries < MAX_RETRIES - 1) {
+					continue;
+				}
+				else {
+					break;
+				}
+			}
+
+			for (int bootretries = 0; bootretries < MAX_RETRIES; bootretries++){
+				ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Booting... (attempt %d)\n", bootretries);
+				uint8_t boot_cmd[] = { 0x4D, 0x61, 0x69, 0x6E };
+				status = elants_i2c_send(devContext, boot_cmd, sizeof(boot_cmd));
+
+				delay.QuadPart = -1 * BOOT_TIME_DELAY_MS * 10;
+				KeDelayExecutionThread(KernelMode, FALSE, &delay);
+
+				if (!NT_SUCCESS(status)) {
+					ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Unable to send boot cmd\n");
+					if (bootretries < MAX_RETRIES - 1) {
+						continue;
+					}
+					else {
+						break;
+					}
+				}
+
+				//Get Hello Packet
+				uint8_t hello_packet[] = { 0x55, 0x55, 0x55, 0x55 };
+
+				uint8_t buf[HEADER_SIZE];
+				status = elants_i2c_read(devContext, buf, sizeof(buf));
+				if (status != STATUS_SUCCESS) {
+					ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Unable to read hello packet!\n");
+					if (bootretries < MAX_RETRIES - 1) {
+						continue;
+					}
+					else {
+						break;
+					}
+				}
+
+				if (memcmp(buf, hello_packet, sizeof(hello_packet))) {
+					ElanPrint(DEBUG_LEVEL_ERROR, DBG_INIT, "Failed to get hello packet! Got: 0x%x 0x%x 0x%x 0x%x\n", buf[0], buf[1], buf[2], buf[3]);
+					if (bootretries < MAX_RETRIES - 1) {
+						continue;
+					}
+					else {
+						DbgPrint("Warning: Allow malformed hello packet\n");
+						break;
+					}
+				}
+			}
+		}
+		if (!NT_SUCCESS(status)) {
+			return status;
+		}
+
 		//Begin EKTH3500 query
 		uint8_t resp[17];
 		uint16_t phy_x, phy_y, rows, cols, osr;
@@ -258,17 +225,7 @@ NTSTATUS BOOTTOUCHSCREEN(
 			return status;
 		}
 
-		WDF_TIMER_CONFIG              timerConfig;
-		WDFTIMER                      hTimer;
-		WDF_OBJECT_ATTRIBUTES         attributes;
-
-		WDF_TIMER_CONFIG_INIT(&timerConfig, ElanResetTimer);
-
-		WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-		attributes.ParentObject = devContext->FxDevice;
-		NTSTATUS status = WdfTimerCreate(&timerConfig, &attributes, &hTimer);
-
-		WdfTimerStart(hTimer, WDF_REL_TIMEOUT_IN_MS(10));
+		devContext->TouchScreenBooted = true;
 	}
 	return status;
 }
@@ -435,6 +392,13 @@ Status
 	PELAN_CONTEXT pDevice = GetDeviceContext(FxDevice);
 	NTSTATUS status = STATUS_SUCCESS;
 
+	if (!pDevice->TouchScreenBooted) {
+		status = BOOTTOUCHSCREEN(pDevice);
+		if (status != STATUS_SUCCESS) {
+			return status;
+		}
+	}
+
 	WdfTimerStart(pDevice->Timer, WDF_REL_TIMEOUT_IN_MS(10));
 
 	for (int i = 0; i < 20; i++) {
@@ -476,6 +440,7 @@ Status
 	WdfTimerStop(pDevice->Timer, TRUE);
 
 	pDevice->ConnectInterrupt = false;
+	pDevice->TouchScreenBooted = false;
 
 	return STATUS_SUCCESS;
 }
