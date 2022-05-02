@@ -399,8 +399,6 @@ Status
 		}
 	}
 
-	WdfTimerStart(pDevice->Timer, WDF_REL_TIMEOUT_IN_MS(10));
-
 	for (int i = 0; i < 20; i++) {
 		pDevice->Flags[i] = 0;
 	}
@@ -436,8 +434,6 @@ Status
 	UNREFERENCED_PARAMETER(FxPreviousState);
 
 	PELAN_CONTEXT pDevice = GetDeviceContext(FxDevice);
-
-	WdfTimerStop(pDevice->Timer, TRUE);
 
 	pDevice->ConnectInterrupt = false;
 	pDevice->TouchScreenBooted = false;
@@ -597,20 +593,6 @@ BOOLEAN OnInterruptIsr(
 	return true;
 }
 
-void ElanTimerFunc(_In_ WDFTIMER hTimer) {
-	WDFDEVICE Device = (WDFDEVICE)WdfTimerGetParentObject(hTimer);
-	PELAN_CONTEXT pDevice = GetDeviceContext(Device);
-
-	if (!pDevice->ConnectInterrupt)
-		return;
-
-	if (!pDevice->RegsSet)
-		return;
-
-	ElanProcessInput(pDevice);
-	return;
-}
-
 NTSTATUS
 ElanEvtDeviceAdd(
 	IN WDFDRIVER       Driver,
@@ -742,21 +724,6 @@ ElanEvtDeviceAdd(
 			"Error creating WDF interrupt object - %!STATUS!",
 			status);
 
-		return status;
-	}
-
-	WDF_TIMER_CONFIG              timerConfig;
-	WDFTIMER                      hTimer;
-
-	WDF_TIMER_CONFIG_INIT_PERIODIC(&timerConfig, ElanTimerFunc, 10);
-
-	WDF_OBJECT_ATTRIBUTES_INIT(&attributes);
-	attributes.ParentObject = device;
-	status = WdfTimerCreate(&timerConfig, &attributes, &hTimer);
-	devContext->Timer = hTimer;
-	if (!NT_SUCCESS(status))
-	{
-		ElanPrint(DEBUG_LEVEL_ERROR, DBG_PNP, "(%!FUNC!) WdfTimerCreate failed status:%!STATUS!\n", status);
 		return status;
 	}
 

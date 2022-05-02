@@ -167,8 +167,6 @@ typedef struct _ELAN_CONTEXT
 
 	BOOLEAN RegsSet;
 
-	WDFTIMER Timer;
-
 	UINT32 TouchCount;
 
 	uint8_t      Flags[20];
