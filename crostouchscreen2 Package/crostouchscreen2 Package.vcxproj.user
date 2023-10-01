@@ -1,41 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|x64'">
-    <SignMode>TestSign</SignMode>
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TestCertificate>
+    </TestCertificate>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|x64'">
-    <SignMode>TestSign</SignMode>
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TestCertificate>
+    </TestCertificate>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Debug|Win32'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TestCertificate>
+    </TestCertificate>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Release|Win32'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Debug|Win32'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8 Release|Win32'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|Win32'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|Win32'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Debug|x64'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win7 Release|x64'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Debug|x64'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Win8.1 Release|x64'">
-    <TestCertificate>CN="WDKTestCert CoolStar,132809860365442907" | 9823BB26AF2B6AB70A2AE4F1FD79466E6351C77F</TestCertificate>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TestCertificate>
+    </TestCertificate>
   </PropertyGroup>
 </Project>
