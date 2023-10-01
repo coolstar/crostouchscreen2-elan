@@ -155,6 +155,8 @@ typedef struct _ELAN_CONTEXT
 
 	WDFQUEUE ReportQueue;
 
+	WDFQUEUE IdleQueue;
+
 	BYTE DeviceMode;
 
 	SPB_CONTEXT I2CContext;
@@ -186,6 +188,19 @@ typedef struct _ELAN_CONTEXT
 } ELAN_CONTEXT, *PELAN_CONTEXT;
 
 WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(ELAN_CONTEXT, GetDeviceContext)
+//
+// Power Idle Workitem context
+// 
+typedef struct _IDLE_WORKITEM_CONTEXT
+{
+	// Handle to a WDF device object
+	WDFDEVICE FxDevice;
+
+	// Handle to a WDF request object
+	WDFREQUEST FxRequest;
+
+} IDLE_WORKITEM_CONTEXT, * PIDLE_WORKITEM_CONTEXT;
+WDF_DECLARE_CONTEXT_TYPE_WITH_NAME(IDLE_WORKITEM_CONTEXT, GetIdleWorkItemContext)
 
 //
 // Function definitions
@@ -263,6 +278,11 @@ ElanGetFeature(
 PCHAR
 DbgHidInternalIoctlString(
 	IN ULONG        IoControlCode
+);
+
+VOID
+ElanCompleteIdleIrp(
+	IN PELAN_CONTEXT FxDeviceContext
 );
 
 //

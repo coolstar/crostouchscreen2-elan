@@ -140,6 +140,9 @@
     <ClCompile Include="spb.cpp" />
     <ClCompile Include="elan.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="crostouchscreen2.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
